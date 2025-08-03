@@ -6,7 +6,7 @@
 # EC2 instances in the target group.
 # =================================================================================
 
-# Create the Application Load Balancer
+
 resource "aws_lb" "main" {
   name               = "fastapi-alb"
   internal           = false
@@ -21,8 +21,7 @@ resource "aws_lb" "main" {
   }
 }
 
-# Create a target group for the ALB
-# The ALB will forward requests to the instances registered in this group.
+
 resource "aws_lb_target_group" "main" {
   name     = "fastapi-tg"
   port     = 8000 # The port our FastAPI app listens on
@@ -44,8 +43,7 @@ resource "aws_lb_target_group" "main" {
   }
 }
 
-# Create a listener for the ALB on port 80 (HTTP)
-# It forwards traffic to the target group.
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
