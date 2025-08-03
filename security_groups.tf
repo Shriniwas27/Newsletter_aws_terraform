@@ -60,8 +60,7 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # --- THIS IS THE FIX ---
-  # Add a rule to allow SSH (port 22) only from the EC2 Instance Connect service IPs.
+ 
   ingress {
     description = "SSH for EC2 Instance Connect"
     from_port   = 22
