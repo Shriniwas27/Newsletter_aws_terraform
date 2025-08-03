@@ -6,16 +6,13 @@
 # database to enforce the principle of least privilege.
 # =================================================================================
 
-# --- NEW DATA SOURCE ---
-# Get the current IP ranges for the EC2 Instance Connect service for our region.
-# This is more secure than allowing SSH from anywhere.
+
 data "aws_ip_ranges" "ec2_instance_connect" {
   regions  = [var.aws_region]
   services = ["ec2_instance_connect"]
 }
 
-# Security Group for the Application Load Balancer (ALB)
-# Allows inbound HTTP and HTTPS traffic from anywhere.
+
 resource "aws_security_group" "alb" {
   name        = "fastapi-alb-sg"
   description = "Allow HTTP/HTTPS traffic to ALB"
@@ -49,8 +46,7 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Security Group for the EC2 Instances (FastAPI App)
-# Allows inbound traffic on port 8000 only from the ALB.
+
 resource "aws_security_group" "ec2" {
   name        = "fastapi-ec2-sg"
   description = "Allow traffic from ALB and SSH for EC2 Instance Connect"
@@ -86,8 +82,7 @@ resource "aws_security_group" "ec2" {
   }
 }
 
-# Security Group for the RDS Database
-# Allows inbound traffic on the PostgreSQL port (5432) only from the EC2 instances.
+
 resource "aws_security_group" "rds" {
   name        = "fastapi-rds-sg"
   description = "Allow traffic from EC2 instances to RDS"
