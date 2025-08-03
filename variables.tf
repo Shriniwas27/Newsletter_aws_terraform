@@ -2,8 +2,6 @@
 # VARIABLE DEFINITIONS
 # =================================================================================
 # This file defines the input variables for our Terraform configuration.
-# Using variables makes the configuration reusable and easier to manage.
-# You can provide values for these variables in a .tfvars file or at the command line.
 # =================================================================================
 
 variable "aws_region" {
@@ -12,19 +10,24 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "domain_name" {
-  description = "The custom domain name you own (e.g., your-app.com)."
-  type        = string
-  default     = "buildownstuff.cloud"
+variable "create_dns_and_cdn" {
+  description = "Set to true if you have a custom domain and want to create Route 53, ACM, CloudFront, and WAF resources."
+  type        = bool
+  default     = false # Default is false, so users without a domain can run it easily.
 }
 
-# --- NEW VARIABLE ---
+# The domain name is now optional and only used if create_dns_and_cdn is true.
+variable "domain_name" {
+  description = "Your custom domain name (e.g., buildownstuff.fun). Only used if create_dns_and_cdn is true."
+  type        = string
+  default     = "" # Defaults to an empty string
+}
+
 variable "notification_email" {
   description = "The email address to send monitoring alerts to."
   type        = string
-  default     = "shriniwaspprachand@gmail.com" # <-- IMPORTANT: REPLACE THIS with your email address
+  default     = "your-email@example.com"
 }
-
 
 variable "vpc_cidr" {
   description = "The CIDR block for the VPC."
