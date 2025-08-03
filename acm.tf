@@ -1,11 +1,7 @@
 # =================================================================================
-# SSL/TLS CERTIFICATE (AWS ACM)
+# SSL/TLS CERTIFICATE (AWS ACM) - OPTIONAL
 # =================================================================================
-# This file provisions a free public SSL certificate from AWS Certificate Manager.
-# It also automatically creates the necessary DNS records in Route 53 to prove
-# that you own the domain.
-#
-# IMPORTANT: ACM certificates for CloudFront MUST be created in the us-east-1 region.
+# These resources will only be created if var.create_dns_and_cdn is set to true.
 # =================================================================================
 
 provider "aws" {
@@ -14,6 +10,9 @@ provider "aws" {
 }
 
 resource "aws_acm_certificate" "cert" {
+
+  count = var.create_dns_and_cdn ? 1 : 0
+
   provider = aws.us_east_1
 
   domain_name       = var.domain_name
@@ -29,10 +28,10 @@ resource "aws_acm_certificate" "cert" {
   }
 }
 
-# Create the DNS validation records in our Route 53 hosted zone.
 resource "aws_route53_record" "cert_validation" {
+
   for_each = {
-    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
+    for dvo in var.create_dns_and_cdn ? aws_acm_certificate.cert[0].domain_validation_options : [] : dvo.domain_name => {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
@@ -44,13 +43,15 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = aws_route53_zone.primary.zone_id
+  zone_id         = aws_route53_zone.primary[0].zone_id
 }
 
-# This resource waits until the certificate has been successfully validated via DNS.
+
 resource "aws_acm_certificate_validation" "cert" {
+  count = var.create_dns_and_cdn ? 1 : 0
+
   provider = aws.us_east_1
 
-  certificate_arn         = aws_acm_certificate.cert.arn
+  certificate_arn         = aws_acm_certificate.cert[0].arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
