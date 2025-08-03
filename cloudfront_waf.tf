@@ -1,16 +1,14 @@
 # =================================================================================
-# CDN (CLOUDFRONT) & FIREWALL (WAF)
+# CDN (CLOUDFRONT) & FIREWALL (WAF) - OPTIONAL
 # =================================================================================
-# This file creates a Web Application Firewall (WAF) with common security rules
-# and then sets up a CloudFront distribution to act as a CDN. The distribution
-# is configured to use the WAF, the ACM certificate, and to forward traffic
-# to your Application Load Balancer.
+# These resources will only be created if var.create_dns_and_cdn is set to true.
 # =================================================================================
 
-# --- AWS WAF v2 ---
 
-# Create a Web ACL (Access Control List)
 resource "aws_wafv2_web_acl" "main" {
+
+  count = var.create_dns_and_cdn ? 1 : 0
+
   name  = "fastapi-waf-acl"
   scope = "CLOUDFRONT"
 
@@ -18,22 +16,18 @@ resource "aws_wafv2_web_acl" "main" {
     allow {}
   }
 
-  # Rule 1: Common SQL Injection Protection
   rule {
     name     = "SQLi"
     priority = 1
-
+    action {
+      block {}
+    }
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
       }
     }
-
-    override_action {
-      none {}
-    }
-
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "SQLi"
@@ -41,25 +35,21 @@ resource "aws_wafv2_web_acl" "main" {
     }
   }
 
-  # Rule 2: Common Rule Set (includes XSS, etc.)
   rule {
-    name     = "CommonRuleSet"
+    name     = "XSS"
     priority = 2
-
+    action {
+      block {}
+    }
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
       }
     }
-
-    override_action {
-      none {}
-    }
-
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "CommonRuleSet"
+      metric_name                = "XSS"
       sampled_requests_enabled   = true
     }
   }
@@ -71,9 +61,16 @@ resource "aws_wafv2_web_acl" "main" {
   }
 }
 
-# --- AWS CloudFront ---
+
+
+data "aws_cloudfront_cache_policy" "all_viewer" {
+  name = "Managed-AllViewer"
+}
 
 resource "aws_cloudfront_distribution" "s3_distribution" {
+
+  count = var.create_dns_and_cdn ? 1 : 0
+
   origin {
     domain_name = aws_lb.main.dns_name
     origin_id   = "ALB-${aws_lb.main.name}"
@@ -97,22 +94,11 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "ALB-${aws_lb.main.name}"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["Origin"]
-      cookies {
-        forward = "all"
-      }
-    }
-
+    cache_policy_id  = data.aws_cloudfront_cache_policy.all_viewer.id
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
   }
 
-  price_class = "PriceClass_100" # Use only North America and Europe edge locations for cost savings
+  price_class = "PriceClass_100"
 
   restrictions {
     geo_restriction {
@@ -121,9 +107,9 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = aws_acm_certificate_validation.cert.certificate_arn
+    acm_certificate_arn = aws_acm_certificate_validation.cert[0].certificate_arn
     ssl_support_method  = "sni-only"
   }
 
-  web_acl_id = aws_wafv2_web_acl.main.arn
+  web_acl_id = aws_wafv2_web_acl.main[0].arn
 }
