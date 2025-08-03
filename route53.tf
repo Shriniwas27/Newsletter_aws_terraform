@@ -19,7 +19,6 @@ resource "aws_route53_record" "www" {
 
   count = var.create_dns_and_cdn ? 1 : 0
 
-  # Note the [0] index, which is required when using count.
   zone_id = aws_route53_zone.primary[0].zone_id
   name    = "www.${var.domain_name}"
   type    = "A"
