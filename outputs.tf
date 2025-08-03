@@ -1,23 +1,16 @@
 # =================================================================================
 # OUTPUTS
 # =================================================================================
-# This file defines the outputs of our Terraform configuration. After `terraform apply`
-# runs, it will print the values of these outputs to the console. This is useful
-# for getting important information like the public URL of our application.
+# This file defines the outputs of our Terraform configuration.
 # =================================================================================
 
-output "application_url" {
-  description = "The final public URL of the application."
-  value       = "https://www.${var.domain_name}"
-}
-
-output "cloudfront_domain_name" {
-  description = "The domain name of the CloudFront distribution."
-  value       = aws_cloudfront_distribution.s3_distribution.domain_name
+output "application_access_point" {
+  description = "The main access point for the application. This will be the custom domain if created, otherwise it will be the ALB's DNS name."
+  value       = var.create_dns_and_cdn ? "https://www.${var.domain_name}" : "http://${aws_lb.main.dns_name}"
 }
 
 output "alb_dns_name" {
-  description = "The DNS name of the Application Load Balancer (for direct access)."
+  description = "The direct DNS name of the Application Load Balancer."
   value       = aws_lb.main.dns_name
 }
 
@@ -34,6 +27,6 @@ output "replica_db_endpoint" {
 }
 
 output "route53_nameservers" {
-  description = "CRITICAL: Update these nameservers at your domain registrar."
-  value       = aws_route53_zone.primary.name_servers
+  description = "If you created a domain, update these nameservers at your domain registrar."
+  value       = var.create_dns_and_cdn ? aws_route53_zone.primary[0].name_servers : "Not created because create_dns_and_cdn is false."
 }
