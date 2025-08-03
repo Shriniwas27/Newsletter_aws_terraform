@@ -6,8 +6,7 @@
 # creates CloudWatch alarms that trigger when specific thresholds are breached.
 # =================================================================================
 
-# --- SNS Topic ---
-# Create an SNS topic that will be the destination for all CloudWatch alarm notifications.
+
 resource "aws_sns_topic" "alarms" {
   name = "fastapi-alarms-topic"
   tags = {
@@ -15,10 +14,7 @@ resource "aws_sns_topic" "alarms" {
   }
 }
 
-# --- SNS Subscription ---
-# Subscribe the email address defined in variables.tf to the SNS topic.
-# IMPORTANT: AWS will send a confirmation email to this address. You must click
-# the link in that email to confirm the subscription and start receiving alerts.
+
 resource "aws_sns_topic_subscription" "email_target" {
   topic_arn = aws_sns_topic.alarms.arn
   protocol  = "email"
@@ -26,11 +22,7 @@ resource "aws_sns_topic_subscription" "email_target" {
 }
 
 
-# --- CloudWatch Alarms ---
 
-# Alarm 1: High CPU Utilization (EC2)
-# This alarm will trigger if the average CPU usage across all EC2 instances
-# in the Auto Scaling Group is above 80% for 5 consecutive minutes.
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   alarm_name          = "fastapi-high-cpu-utilization"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -49,9 +41,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   }
 }
 
-# Alarm 2: Unhealthy Hosts (ALB Target Group)
-# This alarm will trigger if there is at least one unhealthy host in the
-# Application Load Balancer's target group for 3 consecutive minutes.
+
 resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
   alarm_name          = "fastapi-unhealthy-hosts"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -71,9 +61,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
   }
 }
 
-# --- OPTIMIZATION 1: ALB 5xx Errors ---
-# This alarm will trigger if the load balancer reports any 5xx server-side errors.
-# This is crucial for catching application-level bugs even if the hosts are "healthy".
+
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   alarm_name          = "fastapi-alb-5xx-errors"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -94,9 +82,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   }
 }
 
-# --- OPTIMIZATION 2: RDS High CPU Utilization ---
-# This alarm will trigger if the primary database CPU is over 80% for 10 minutes.
-# This can be an early indicator of inefficient queries or an undersized instance.
+
 resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   alarm_name          = "fastapi-rds-high-cpu"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -115,9 +101,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   }
 }
 
-# --- OPTIMIZATION 3: RDS Low Freeable Memory ---
-# This alarm will trigger if the database's freeable memory drops below 256MB.
-# Low memory is a common cause of poor database performance.
+
 resource "aws_cloudwatch_metric_alarm" "rds_low_memory" {
   alarm_name          = "fastapi-rds-low-freeable-memory"
   comparison_operator = "LessThanOrEqualToThreshold"
