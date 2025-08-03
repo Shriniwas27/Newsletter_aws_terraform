@@ -29,7 +29,7 @@ resource "aws_lb_target_group" "main" {
   vpc_id   = aws_vpc.main.id
 
   health_check {
-    path                = "/health" # A health check endpoint in your FastAPI app
+    path                = "/health"
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30
@@ -55,6 +55,4 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# Note: For a production setup, you would add another listener on port 443 (HTTPS)
-# and associate an SSL certificate from AWS Certificate Manager (ACM).
-# resource "aws_lb_listener" "https" { ... }
+
