@@ -1,12 +1,13 @@
 # =================================================================================
-# DNS (ROUTE 53)
+# DNS (ROUTE 53) - OPTIONAL
 # =================================================================================
-# This file creates a public hosted zone in Route 53 for your custom domain.
-# After this is created, you must manually update the nameservers at your
-# domain registrar to the ones provided in the Terraform output.
+# These resources will only be created if var.create_dns_and_cdn is set to true.
 # =================================================================================
 
 resource "aws_route53_zone" "primary" {
+
+  count = var.create_dns_and_cdn ? 1 : 0
+
   name = var.domain_name
 
   tags = {
@@ -14,16 +15,19 @@ resource "aws_route53_zone" "primary" {
   }
 }
 
-# This record will point your domain (e.g., www.your-app.com) to the CloudFront distribution.
-# We use an alias record for better performance and to handle IP address changes automatically.
 resource "aws_route53_record" "www" {
-  zone_id = aws_route53_zone.primary.zone_id
+
+  count = var.create_dns_and_cdn ? 1 : 0
+
+  # Note the [0] index, which is required when using count.
+  zone_id = aws_route53_zone.primary[0].zone_id
   name    = "www.${var.domain_name}"
   type    = "A"
 
   alias {
-    name                   = aws_cloudfront_distribution.s3_distribution.domain_name
-    zone_id                = aws_cloudfront_distribution.s3_distribution.hosted_zone_id
+   
+    name                   = aws_cloudfront_distribution.s3_distribution[0].domain_name
+    zone_id                = aws_cloudfront_distribution.s3_distribution[0].hosted_zone_id
     evaluate_target_health = false
   }
 }
