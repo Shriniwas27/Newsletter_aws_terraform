@@ -6,10 +6,10 @@
 # and an Auto Scaling Group to manage these instances.
 # =================================================================================
 
-
+# Find the latest Ubuntu 22.04 LTS AMI provided by Canonical.
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] 
+  owners      = ["099720109477"] # Canonical's AWS account ID
 
   filter {
     name   = "name"
@@ -23,30 +23,32 @@ data "aws_ami" "ubuntu" {
 }
 
 
-
+# Create a Launch Template for the Auto Scaling Group
 resource "aws_launch_template" "main" {
   name_prefix   = "fastapi-lt-"
   image_id      = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
 
- 
+  # Attach the IAM instance profile to grant permissions to the EC2 instances.
   iam_instance_profile {
     arn = aws_iam_instance_profile.ec2_profile.arn
   }
 
   vpc_security_group_ids = [aws_security_group.ec2.id]
 
-  
-  user_data = base64encode(<<-EOF
-             
+ 
+  user_data = base64encode(replace(<<-EOF
+              
+              
               apt-get update -y
-             
+              
               apt-get install -y git python3-pip netcat-openbsd unzip
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
               unzip awscliv2.zip
               ./aws/install
 
-            
+              
+              
               wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
               dpkg -i -E ./amazon-cloudwatch-agent.deb
               
@@ -72,23 +74,22 @@ resource "aws_launch_template" "main" {
               }
               EOT
 
-            
               /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
 
-             
+              
               git clone https://github.com/Shriniwas27/newsletter_aws.git /home/ubuntu/repo
               chown -R ubuntu:ubuntu /home/ubuntu/repo
               cd /home/ubuntu/repo
-             
               pip3 install -r requirements.txt
 
-            
+             
               echo "Fetching database credentials from Secrets Manager..."
               SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id ${aws_secretsmanager_secret.db_password.id} --region ${var.aws_region} --query SecretString --output text)
               
               
               export DB_PASSWORD=$(echo $SECRET_JSON | python3 -c "import sys, json; print(json.load(sys.stdin)['password'])")
 
+              
               DB_HOST="${aws_db_instance.primary.address}"
               echo "Waiting for database to become available..."
               while ! nc -z $DB_HOST 5432; do   
@@ -97,9 +98,10 @@ resource "aws_launch_template" "main" {
               done
               echo "Database is available! Starting application."
 
+              
               touch /var/log/fastapi_app.log
-            
               chown ubuntu:ubuntu /var/log/fastapi_app.log
+              
               
               sudo -u ubuntu sh -c " \
                 export WRITER_DATABASE_URL='postgresql://${var.db_username}:$${DB_PASSWORD}@${aws_db_instance.primary.address}/${var.db_name}'; \
@@ -108,6 +110,7 @@ resource "aws_launch_template" "main" {
                 /usr/local/bin/uvicorn fastapi_app.main:app --host 0.0.0.0 --port 8000 &> /var/log/fastapi_app.log & \
               "
               EOF
+              , "\r\n", "\n")
   )
 
   tags = {
@@ -115,7 +118,7 @@ resource "aws_launch_template" "main" {
   }
 }
 
-
+# Create the Auto Scaling Group
 resource "aws_autoscaling_group" "main" {
   name                = "fastapi-asg"
   desired_capacity    = 2
