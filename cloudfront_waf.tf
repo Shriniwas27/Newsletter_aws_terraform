@@ -6,7 +6,6 @@
 
 
 resource "aws_wafv2_web_acl" "main" {
-
   count = var.create_dns_and_cdn ? 1 : 0
 
   name  = "fastapi-waf-acl"
@@ -16,11 +15,12 @@ resource "aws_wafv2_web_acl" "main" {
     allow {}
   }
 
+
   rule {
     name     = "SQLi"
     priority = 1
-    action {
-      block {}
+    override_action {
+      none {}
     }
     statement {
       managed_rule_group_statement {
@@ -38,8 +38,8 @@ resource "aws_wafv2_web_acl" "main" {
   rule {
     name     = "XSS"
     priority = 2
-    action {
-      block {}
+    override_action {
+      none {}
     }
     statement {
       managed_rule_group_statement {
@@ -62,13 +62,12 @@ resource "aws_wafv2_web_acl" "main" {
 }
 
 
-
-data "aws_cloudfront_cache_policy" "all_viewer" {
-  name = "Managed-AllViewer"
+# --- AWS CloudFront ---
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
 }
 
 resource "aws_cloudfront_distribution" "s3_distribution" {
-
   count = var.create_dns_and_cdn ? 1 : 0
 
   origin {
@@ -94,7 +93,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "ALB-${aws_lb.main.name}"
-    cache_policy_id  = data.aws_cloudfront_cache_policy.all_viewer.id
+    cache_policy_id  = data.aws_cloudfront_cache_policy.caching_disabled.id
     viewer_protocol_policy = "redirect-to-https"
   }
 
