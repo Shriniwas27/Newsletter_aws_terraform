@@ -13,21 +13,21 @@ variable "aws_region" {
 variable "create_dns_and_cdn" {
   description = "Set to true if you have a custom domain and want to create Route 53, ACM, CloudFront, and WAF resources."
   type        = bool
-  default     = true
+  default     = false
 }
 #set to true if you want to add a domain name
 
 variable "domain_name" {
   description = "Your custom domain name (e.g., buildownstuff.fun). Only used if create_dns_and_cdn is true."
   type        = string
-  default     = "buildownstuff.cloud" 
+  default     = "" 
 }
 #add your domain name here.
 
 variable "notification_email" {
   description = "The email address to send monitoring alerts to."
   type        = string
-  default     = "shriniwaspprachand@gmail.com"
+  default     = ""
 }
 
 variable "vpc_cidr" {
