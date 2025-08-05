@@ -28,5 +28,6 @@ output "replica_db_endpoint" {
 
 output "route53_nameservers" {
   description = "If you created a domain, update these nameservers at your domain registrar."
-  value       = var.create_dns_and_cdn ? aws_route53_zone.primary[0].name_servers : "Not created because create_dns_and_cdn is false."
+  
+  value       = var.create_dns_and_cdn ? aws_route53_zone.primary[0].name_servers : ["Not created because create_dns_and_cdn is false."]
 }
