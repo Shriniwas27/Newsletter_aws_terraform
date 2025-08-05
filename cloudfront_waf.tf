@@ -85,7 +85,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "CloudFront for FastAPI App"
-  default_root_object = "index.html"
+  #default_root_object = "index.html"
 
   aliases = ["www.${var.domain_name}"]
 
